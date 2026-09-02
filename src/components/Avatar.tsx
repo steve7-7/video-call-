@@ -5,20 +5,31 @@ export function Avatar({
   size = 40,
   online,
   className = "",
+  avatarUrl,
 }: {
   name: string;
   size?: number;
   online?: boolean;
   className?: string;
+  avatarUrl?: string;
 }) {
   return (
     <div className={`relative shrink-0 ${className}`} style={{ width: size, height: size }}>
-      <div
-        className="flex h-full w-full items-center justify-center rounded-full font-semibold text-white select-none"
-        style={{ backgroundColor: avatarColor(name), fontSize: size * 0.36 }}
-      >
-        {initials(name)}
-      </div>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt="Profile"
+          className="flex h-full w-full items-center justify-center rounded-full font-semibold text-white select-none"
+          style={{ width: size, height: size, objectFit: "cover" }}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full items-center justify-center rounded-full font-semibold text-white select-none"
+          style={{ backgroundColor: avatarColor(name), fontSize: size * 0.36 }}
+        >
+          {initials(name)}
+        </div>
+      )}
       {online !== undefined && (
         <span
           className="absolute right-0 bottom-0 block rounded-full border-2 border-white"
