@@ -18,7 +18,7 @@ export function PeoplePanel({
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {participants.map((p) => (
           <div key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[#3A3B3C]">
-            <Avatar name={p.name} size={36} online />
+            <Avatar name={p.name} size={36} online avatarUrl={p.avatarUrl} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">
                 {p.name} {p.id === user.id && <span className="text-[#B0B3B8]">(You)</span>}

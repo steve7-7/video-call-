@@ -2,6 +2,8 @@
 export interface Participant {
   id: string;
   name: string;
+  /** Optional avatar image URL. If not provided, initials avatar is used. */
+  avatarUrl?: string;
 }
 
 /** A chat message exchanged inside a call. */
@@ -135,6 +137,8 @@ export interface MediaSettings {
 export interface UserProfile {
   id: string;
   name: string;
+  /** Optional avatar image URL (base64 or data URL). If not provided, initials avatar is used. */
+  avatarUrl?: string;
 }
 
 /** Video filter options for self-view and broadcast. */
