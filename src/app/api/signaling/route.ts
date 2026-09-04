@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { and, asc, eq, gt } from "drizzle-orm";
-import { db } from "@/db";
+import { db, ensureSchema, pruneSignalEvents } from "@/db";
 import { signalEvents } from "@/db/schema";
 import type { SignalMessage } from "@/lib/types";
 
@@ -9,6 +9,15 @@ export const dynamic = "force-dynamic";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const MAX_PAYLOAD_SIZE = 16_000;
+
+function dbUnavailable(err: unknown) {
+  const message = err instanceof Error ? err.message : "database error";
+  console.error("[signaling] database error:", message);
+  return NextResponse.json(
+    { error: "database unavailable", detail: message },
+    { status: 503 },
+  );
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,16 +28,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "roomId is required" }, { status: 400 });
   }
 
-  const events = await db
-    .select()
-    .from(signalEvents)
-    .where(and(eq(signalEvents.roomId, roomId), gt(signalEvents.id, after)))
-    .orderBy(asc(signalEvents.id))
-    .limit(300);
+  try {
+    await ensureSchema();
+    const events = await db
+      .select()
+      .from(signalEvents)
+      .where(and(eq(signalEvents.roomId, roomId), gt(signalEvents.id, after)))
+      .orderBy(asc(signalEvents.id))
+      .limit(300);
 
-  return NextResponse.json({
-    events: events.map((e) => ({ id: e.id, message: e.payload })),
-  });
+    return NextResponse.json({
+      events: events.map((e) => ({ id: e.id, message: e.payload })),
+    });
+  } catch (err) {
+    return dbUnavailable(err);
+  }
 }
 
 export async function POST(request: Request) {
@@ -47,14 +61,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "message too large" }, { status: 413 });
   }
 
-  const [row] = await db
-    .insert(signalEvents)
-    .values({
-      roomId,
-      sender: message.from,
-      payload: message,
-    })
-    .returning({ id: signalEvents.id });
+  try {
+    await ensureSchema();
+    const [row] = await db
+      .insert(signalEvents)
+      .values({
+        roomId,
+        sender: message.from,
+        payload: message,
+      })
+      .returning({ id: signalEvents.id });
 
-  return NextResponse.json({ id: row?.id ?? 0 }, { status: 201 });
+    void pruneSignalEvents().catch((err) => {
+      console.warn("[signaling] prune failed:", err instanceof Error ? err.message : err);
+    });
+
+    return NextResponse.json({ id: row?.id ?? 0 }, { status: 201 });
+  } catch (err) {
+    return dbUnavailable(err);
+  }
 }

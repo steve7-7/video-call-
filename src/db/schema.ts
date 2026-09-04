@@ -13,6 +13,8 @@ import type { SignalMessage } from "@/lib/types";
  * When Supabase Realtime credentials are configured (NEXT_PUBLIC_SUPABASE_URL
  * + NEXT_PUBLIC_SUPABASE_ANON_KEY) the app uses Supabase Realtime broadcast
  * channels for WebRTC signaling instead, and this table is unused.
+ *
+ * The table is created automatically on first API request via `ensureSchema()`.
  */
 export const signalEvents = pgTable(
   "signal_events",
@@ -27,7 +29,8 @@ export const signalEvents = pgTable(
   },
   (table) => [
     index("signal_events_room_idx").on(table.roomId, table.id),
-  ]
+    index("signal_events_created_at_idx").on(table.createdAt),
+  ],
 );
 
 export type SignalEventRow = typeof signalEvents.$inferSelect;
